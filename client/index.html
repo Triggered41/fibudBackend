@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        form{
+            display: flex;
+            flex-direction: column;
+            row-gap: 1rem;
+            width: 15rem;
+        }
+        form div{
+            display: flex;
+            flex-direction: column;
+        }
+        .view{
+            display: flex;
+            column-gap: 5rem;
+        }
+
+        table{
+            border-collapse: collapse;
+        }
+
+        td, th{
+            text-align: center;
+            padding: .5rem;
+            height: 1rem;
+        }
+    </style>
+
+</head>
+<body>
+    <div class="view">
+        <div>
+            <h2>Experts Form</h2>
+            <form method="post" onsubmit="submitExpertForm(event);">
+                <div>
+                    <label for="">Name</label>
+                    <input name="name" type="text">
+                </div>
+                
+                <div>
+                    <label for="">Specialization</label>
+                    <select name="specs" id="">
+                        <option value="undefined">None</option>
+                        <option value="fitness">Fitness</option>
+                        <option value="health">Health</option>
+                        <option value="mentalwellbeing">Mental Wellbeing</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="">Rating</label>
+                    <input name="rating" type="text" placeholder="1-5">
+                </div>
+                
+                <div>
+                    <label for="">Availability</label>
+                    <input name="avail" type="text" placeholder="9am-5pm">
+                </div>
+                
+                <input type="submit" value="Add Expert" name="add">
+                <input type="submit" value="Get Experts">
+            </form>
+        </div>
+        <div>
+
+            <h2>Clients Form</h2>
+            <form method="post" onsubmit="submitClientForm(event);">
+                <div>
+                    <label for="">Name</label>
+                    <input type="text" name="name">
+                </div>
+                <input type="submit" value="Add Client" name="add">
+                <input type="submit" value="Get Clients" name="get">
+            </form>
+        </div>
+        
+        <div>
+            <h2 id="tableName">Experts</h2>
+            <table id="viewTable" border="collapse" >
+                <!-- <tr>
+                    <th>S.No</th>
+                    <th>Name</th>
+                    <th>Specialization</th>
+                    <th>Rating</th>
+                    <th>Availability</th>
+                </tr> -->
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function submitExpertForm(ev){
+            ev.preventDefault()
+            const data = {name: ev.target.name.value, specialization: ev.target.specs.value, rating: parseFloat(ev.target.rating.value), availability: ev.target.avail.value}
+            console.log(document.activeElement == ev.target.add)
+
+            if (document.activeElement == ev.target.add){
+
+                fetch('/expert', {
+                    mode: 'cors',
+                    method: 'POST',
+                headers: { 'content-type': 'application/json'},
+                body: JSON.stringify(data)
+            })
+            .then(val=>val.json())
+            .then(data=>console.log(data))
+            return
+            }
+
+            fetch(`/expert?specialization=${data.specialization}&&rating=${data.rating}`)
+            .then(val=>val.json())
+            .then(experts => {
+                let rows = `<tr>
+                                <th>S.No</th>
+                                <th>Name</th>
+                                <th>Specialization</th>
+                                <th>Rating</th>
+                                <th>Availability</th>
+                                <th>Clients</th>
+                            </tr>
+                            `
+                let count = 1
+                console.log("A: ",experts[0].clients)
+                for (const row of experts) {
+                    rows += `
+                        <tr>
+                            <td>${count++}</td> 
+                            <td>${row.name}</td>
+                            <td>${row.specialization}</td>
+                            <td>${row.rating}</td>
+                            <td>${row.availability}</td>
+                            <td>${row.clients[0] ? row.clients.map(val=>val.name).join(', ') : ''}</td>
+                            <tr/>
+                        `
+                }
+                document.querySelector('#tableName').innerHTML = 'Experts'
+                document.querySelector('#viewTable').innerHTML = rows
+            })
+        }
+
+        function submitClientForm(ev) {
+            ev.preventDefault()
+            if (document.activeElement == ev.target.get){
+                fetch('/client').then(val=>val.json())
+                .then(data=>{
+                    let rows = `<tr>
+                                    <th>S.No</th>
+                                    <th>Name</th>
+                                    <th>Experts</th>
+                                <tr/>`
+                    data.forEach((row, id) => {
+                    console.log("R: ", row)
+                    rows += `
+                            <tr>
+                                <td>${id+1}</td>
+                                <td>${row.name}</td>
+                                <td>${row.experts[0]?row.experts.map(val=>val.name).join(', '):''}</td>
+                            <tr/>
+                            `
+                    })
+                            
+                document.querySelector('#tableName').innerHTML = 'Clients'
+                document.querySelector('#viewTable').innerHTML = ""
+                document.querySelector('#viewTable').innerHTML = rows
+            })
+            }else{
+                if (!ev.target.name.value) return
+                fetch('/client', {
+                    mode:"cors",
+                    method: 'POST',
+                    headers: { 'content-type': 'application/json'},
+                    body: JSON.stringify({name: ev.target.name.value})
+                })
+            }
+            
+        }
+    </script>
+</body>
+</html>
